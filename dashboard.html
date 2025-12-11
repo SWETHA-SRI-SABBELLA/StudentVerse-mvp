@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>StudentVerse - Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; background:#f4f7fb; margin:0; }
+        header { background:#4f46e5; color:white; text-align:center; padding:20px; }
+        section {
+            max-width:900px; margin:20px auto; background:white; padding:20px;
+            border-radius:10px; box-shadow:0 4px 10px rgba(0,0,0,0.08);
+        }
+        .top-links { text-align:center; margin-top:10px; }
+        .top-links a { color:white; margin:0 5px; text-decoration:underline; font-size:14px; }
+        .card {
+            background:#eef2ff; padding:15px; border-radius:8px; margin-top:10px;
+        }
+        .card h3 { margin-top:0; }
+        .tag {
+            display:inline-block; padding:2px 8px; border-radius:999px;
+            font-size:12px; font-weight:bold;
+        }
+        .tag-low { background:#dcfce7; color:#166534; }
+        .tag-mid { background:#fef9c3; color:#854d0e; }
+        .tag-high { background:#fee2e2; color:#b91c1c; }
+        .muted { color:#6b7280; font-size:14px; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>StudentVerse Dashboard</h1>
+    <p>Quick snapshot of your stress, study plan & carbon footprint</p>
+    <div class="top-links">
+        <a href="index.html">Home</a> |
+        <a href="stress.html">Stress Test</a> |
+        <a href="scheduler.html">Study Scheduler</a> |
+        <a href="carbon.html">Carbon Tool</a>
+    </div>
+</header>
+
+<section>
+    <h2>📊 Overview</h2>
+    <p class="muted">
+        This dashboard shows the <b>latest data</b> generated from the other tools.
+        Run the Stress Test, Study Scheduler and Carbon Calculator first for a full view.
+    </p>
+
+    <!-- Stress card -->
+    <div class="card" id="stressCard">
+        <h3>🧠 Stress & Typing</h3>
+        <div id="stressContent" class="muted">
+            No stress test data yet. Please complete a test on the Stress page.
+        </div>
+    </div>
+
+    <!-- Study plan card -->
+    <div class="card" id="studyCard">
+        <h3>📚 Study Plan</h3>
+        <div id="studyContent" class="muted">
+            No study plan yet. Generate one on the Study Scheduler page.
+        </div>
+    </div>
+
+    <!-- Carbon card -->
+    <div class="card" id="carbonCard">
+        <h3>🌱 Carbon Footprint</h3>
+        <div id="carbonContent" class="muted">
+            No carbon data yet. Use the Carbon Tool to calculate it.
+        </div>
+    </div>
+
+    <p class="muted" style="margin-top:15px;">
+        (In a full version, this dashboard could pull data from Google Cloud Firestore
+        and show weekly charts and trends. For this MVP, we show the latest local session data.)
+    </p>
+</section>
+
+<script>
+// Helper to safely parse localStorage
+function getData(key){
+    try {
+        const raw = localStorage.getItem(key);
+        if (!raw) return null;
+        return JSON.parse(raw);
+    } catch (e) {
+        console.error("Error reading", key, e);
+        return null;
+    }
+}
+
+// ----- STRESS CARD -----
+(function(){
+    const data = getData("studentverse_stress");
+    const el = document.getElementById("stressContent");
+    if (!data) return;
+
+    let tagClass = "tag-mid";
+    if (data.stressLevel && data.stressLevel.includes("High")) tagClass = "tag-high";
+    else if (data.stressLevel && data.stressLevel.includes("Low")) tagClass = "tag-low";
+
+    el.innerHTML = `
+        <p><b>Last updated:</b> ${data.time || "N/A"}</p>
+        <p>
+            <b>Words typed:</b> ${data.words ?? "N/A"}<br>
+            <b>Speed:</b> ${data.wpm ?? "N/A"} WPM<br>
+            <b>Stress Score:</b> ${data.stressScore ?? "N/A"}
+            ${data.stressLevel ? `<span class="tag ${tagClass}">${data.stressLevel}</span>` : ""}
+        </p>
+        <p class="muted">
+            This score comes from your typing performance in a 30-second test.
+        </p>
+    `;
+})();
+
+// ----- STUDY PLAN CARD -----
+(function(){
+    const data = getData("studentverse_schedule");
+    const el = document.getElementById("studyContent");
+    if (!data) return;
+
+    el.innerHTML = `
+        <p><b>Last updated:</b> ${data.time || "N/A"}</p>
+        <p>
+            <b>Input Stress Score:</b> ${data.stressScore ?? "N/A"}<br>
+            <b>Hours Available:</b> ${data.hoursAvailable ?? "N/A"}
+        </p>
+        <p><b>Plan:</b><br>${data.plan || "Plan details not available."}</p>
+    `;
+})();
+
+// ----- CARBON CARD -----
+(function(){
+    const data = getData("studentverse_carbon");
+    const el = document.getElementById("carbonContent");
+    if (!data) return;
+
+    el.innerHTML = `
+        <p><b>Last updated:</b> ${data.time || "N/A"}</p>
+        <p>
+            <b>Distance:</b> ${data.distance ?? "N/A"} km<br>
+            <b>Mode:</b> ${data.mode ?? "N/A"}<br>
+            <b>Estimated CO₂:</b> ${data.co2kg ?? "N/A"} kg
+        </p>
+        <p class="muted">
+            Try walking, cycling or using shared transport to bring this number down over time.
+        </p>
+    `;
+})();
+</script>
+
+</body>
+</html>

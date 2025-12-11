@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>StudentVerse - Carbon Footprint</title>
+    <style>
+        body { font-family: Arial, sans-serif; background:#f4f7fb; margin:0; }
+        header { background:#4f46e5; color:white; text-align:center; padding:20px; }
+        section {
+            max-width:900px; margin:20px auto; background:white; padding:20px;
+            border-radius:10px; box-shadow:0 4px 10px rgba(0,0,0,0.08);
+        }
+        input, select, button {
+            width:100%; padding:10px; font-size:16px; margin-top:10px;
+        }
+        button { background:#4f46e5; color:white; border:none; border-radius:6px; cursor:pointer; }
+        button:hover { background:#4338ca; }
+        .result {
+            margin-top:15px; background:#eef2ff; padding:15px; border-radius:8px;
+        }
+        .top-links { text-align:center; margin-top:10px; }
+        .top-links a { color:white; margin:0 5px; text-decoration:underline; font-size:14px; }
+    </style>
+
+    <!-- 🔥 Firebase v8 + Firestore + our init -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="firebase-init.js"></script>
+</head>
+<body>
+
+<header>
+    <h1>Carbon Footprint Calculator</h1>
+    <p>StudentVerse</p>
+    <div class="top-links">
+        <a href="index.html">Home</a> |
+        <a href="stress.html">Stress Test</a> |
+        <a href="dashboard.html">Dashboard</a>
+    </div>
+</header>
+
+<section>
+    <h2>🌱 Daily Travel Emissions</h2>
+    <p>Estimate CO₂ emissions based on distance and transport mode.</p>
+
+    <input id="distance" type="number" step="0.1"
+           placeholder="Distance travelled (km) e.g. 2.5">
+
+    <select id="mode">
+        <option value="">Select transport mode</option>
+        <option value="walk">Walking</option>
+        <option value="cycle">Bicycle</option>
+        <option value="bus">Bus</option>
+        <option value="car">Car</option>
+    </select>
+
+    <button onclick="calculateCarbon()">Calculate Footprint</button>
+
+    <div class="result" id="carbonResult">
+        Your carbon footprint will appear here.
+    </div>
+</section>
+
+<script>
+function calculateCarbon() {
+    const km = Number(document.getElementById("distance").value);
+    const mode = document.getElementById("mode").value;
+
+    if (!km || !mode) {
+        document.getElementById("carbonResult").innerText =
+            "Please enter distance and select a mode.";
+        return;
+    }
+
+    const factors = {
+        walk: 0,
+        cycle: 0.01,
+        bus: 0.105,
+        car: 0.192
+    };
+
+    const co2 = (km * factors[mode]).toFixed(3);
+
+    document.getElementById("carbonResult").innerHTML =
+        `<b>Estimated CO₂ Emission:</b> ${co2} kg<br>
+         <b>Mode:</b> ${mode}<br>
+         <b>Tip:</b> ${mode === "car" ? "Consider public transport or cycling!" : "Good eco-friendly choice 👍"}`;
+
+    const carbonData = {
+        distance: km,
+        mode: mode,
+        co2kg: co2,
+        time: new Date().toLocaleString()
+    };
+
+    // Save locally for dashboard
+    localStorage.setItem("studentverse_carbon", JSON.stringify(carbonData));
+
+    // ✅ Save to Firestore if available
+    if (window.saveCarbonData) {
+        window.saveCarbonData(carbonData);
+    }
+}
+</script>
+
+</body>
+</html>

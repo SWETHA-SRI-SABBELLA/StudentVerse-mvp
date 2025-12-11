@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>StudentVerse - Home</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f7fb;
+            margin: 0;
+        }
+        header {
+            background: #4f46e5;
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+        main {
+            max-width: 900px;
+            margin: 20px auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+        }
+        h2 {
+            color: #333;
+        }
+        p {
+            line-height: 1.5;
+        }
+        .btn-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        button {
+            flex: 1;
+            min-width: 150px;
+            padding: 10px;
+            font-size: 16px;
+            background: #4f46e5;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #4338ca;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>StudentVerse</h1>
+    <p>Holistic platform for students – school, college & university</p>
+</header>
+
+<main>
+    <h2>Welcome 👋</h2>
+    <p>
+        StudentVerse helps you track your <b>stress levels</b>, build a 
+        <b>personalized study schedule</b>, and understand your 
+        <b>daily carbon footprint</b>.
+    </p>
+    <p>Start with any of the tools below, then visit the Dashboard to see everything together.</p>
+
+    <div class="btn-row">
+        <button onclick="location.href='stress.html'">🧠 Stress / Typing Test</button>
+        <button onclick="location.href='carbon.html'">🌱 Carbon Footprint</button>
+        <button onclick="location.href='dashboard.html'">📊 Dashboard</button>
+    </div>
+</main>
+
+</body>
+</html>
