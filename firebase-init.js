@@ -1,180 +1,115 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <title>Scheduler</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+// firebase-init.js
+// Firebase v8 (web) initialization + Firestore helpers for StudentVerse
+// Drop this file in the same folder as your HTML files and make sure
+// the HTML pages include the v8 firebase-app & firebase-firestore scripts BEFORE this file:
+// <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+// <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+// <script src="firebase-init.js"></script>
 
-  <style>
-    body {
-      background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 1rem;
-    }
-    .container {
-      background: rgba(255, 255, 255, 0.95);
-      border-radius: 20px;
-      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
-      padding: 2.5rem;
-      max-width: 600px;
-      animation: fadeIn 1s ease-in-out;
-    }
-    h2 {
-      color: #2d3436;
-      text-align: center;
-      margin-bottom: 2rem;
-      font-weight: 600;
-    }
-    .form-label {
-      font-weight: 500;
-      color: #636e72;
-      margin-bottom: 0.5rem;
-    }
-    .form-control {
-      border-radius: 10px;
-      border: 2px solid #ddd;
-      transition: border-color 0.3s, box-shadow 0.3s;
-    }
-    .form-control:focus {
-      border-color: #0984e3;
-      box-shadow: 0 0 0 0.2rem rgba(9, 132, 227, 0.25);
-    }
-    .btn-primary {
-      background: linear-gradient(45deg, #0984e3, #74b9ff);
-      border: none;
-      border-radius: 25px;
-      padding: 0.75rem 2rem;
-      font-weight: 500;
-      transition: transform 0.3s, box-shadow 0.3s;
-      width: 100%;
-    }
-    .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 12px rgba(9, 132, 227, 0.3);
-    }
-    #scheduleOut {
-      background: #f8f9fa;
-      border: 1px solid #e9ecef;
-      border-radius: 10px;
-      padding: 1rem;
-      font-family: 'Courier New', monospace;
-      color: #495057;
-      white-space: pre-wrap;
-      word-wrap: break-word;
-      min-height: 150px;
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-  </style>
+// ---- 1) Project config (copied from your Firebase console) ----
+const firebaseConfig = {
+  apiKey: "AIzaSyCZoUKvnekSP2-rdrK9oq9nBQup8GHUix4",
+  authDomain: "studentverse-d6b5e.firebaseapp.com",
+  projectId: "studentverse-d6b5e",
+  storageBucket: "studentverse-d6b5e.firebasestorage.app",
+  messagingSenderId: "450373885522",
+  appId: "1:450373885522:web:08ea6d0511f4970006098b"
+};
 
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-  <script src="firebase-init.js"></script>
-</head>
+// ---- 2) Initialize Firebase + Firestore (v8 style) ----
+try {
+  if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+    console.log("Firebase initialized.");
+  } else {
+    console.log("Firebase app already initialized.");
+  }
+} catch (e) {
+  console.error("Firebase initialization error:", e);
+}
 
-<body class="p-4">
-  <div class="container">
-    <h2><i class="bi bi-calendar-event text-primary"></i> Adaptive Study Scheduler</h2>
+const db = firebase.firestore();
 
-    <div class="mb-3">
-      <label for="stressIn" class="form-label"><i class="bi bi-brain"></i> Stress Score (0–100)</label>
-      <input id="stressIn" class="form-control" type="number" value="50" min="0" max="100"/>
-    </div>
+// ---- 3) Helper: server timestamp + client time wrapper ----
+function withTimestamps(payload) {
+  return {
+    ...payload,
+    clientTime: new Date().toLocaleString(),
+    time: firebase.firestore.FieldValue.serverTimestamp()
+  };
+}
 
-    <div class="mb-3">
-      <label for="hoursIn" class="form-label"><i class="bi bi-clock"></i> Hours Available (0–24)</label>
-      <input id="hoursIn" class="form-control" type="number" value="3" min="0" max="24" step="0.5"/>
-    </div>
+// ---- 4) Save helpers (exported on window) ----
 
-    <button id="genBtn" class="btn btn-primary mt-3"><i class="bi bi-gear"></i> Generate</button>
+// Save stress test result
+// data should be an object (words, wpm, stressLevel, stressScore, scheduleHtml, etc.)
+window.saveStressResult = async function(data) {
+  try {
+    const payload = withTimestamps(data);
+    const docRef = await db.collection("stressScores").add(payload);
+    console.log(✅ Saved stress result to Firestore (id: ${docRef.id}));
+    return { ok: true, id: docRef.id };
+  } catch (e) {
+    console.error("Error saving stress result:", e);
+    return { ok: false, error: e };
+  }
+};
 
-    <div class="mt-3">
-      <label class="form-label"><i class="bi bi-list-check"></i> Generated Schedule:</label>
-      <pre id="scheduleOut" class="mt-2"></pre>
-    </div>
-  </div>
+// Save study plan
+// data should be an object (stressScore, hoursAvailable, plan, etc.)
+window.saveStudyPlan = async function(data) {
+  try {
+    const payload = withTimestamps(data);
+    const docRef = await db.collection("studyPlans").add(payload);
+    console.log(✅ Saved study plan to Firestore (id: ${docRef.id}));
+    return { ok: true, id: docRef.id };
+  } catch (e) {
+    console.error("Error saving study plan:", e);
+    return { ok: false, error: e };
+  }
+};
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
+// Save carbon data
+// data should be an object (distance, mode, co2kg, etc.)
+window.saveCarbonData = async function(data) {
+  try {
+    const payload = withTimestamps(data);
+    const docRef = await db.collection("carbonData").add(payload);
+    console.log(✅ Saved carbon data to Firestore (id: ${docRef.id}));
+    return { ok: true, id: docRef.id };
+  } catch (e) {
+    console.error("Error saving carbon data:", e);
+    return { ok: false, error: e };
+  }
+};
 
-  <script>
-    function generateSchedule(stress, hours) {
-      let blocks = [];
-      let sessionLength, breakLength;
+// ---- 5) Optional helper for dashboard (fetch latest documents) ----
+// Example usage: window.getLatestStress(5).then(r => console.log(r))
+window.getLatestStress = async function(limit = 5) {
+  try {
+    const snap = await db.collection("stressScores")
+      .orderBy("time", "desc")
+      .limit(limit)
+      .get();
+    const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    return { ok: true, items };
+  } catch (e) {
+    console.error("Error reading latest stress scores:", e);
+    return { ok: false, error: e };
+  }
+};
 
-      if (stress > 70) {
-        sessionLength = 25;
-        breakLength = 10;
-      } else if (stress > 30) {
-        sessionLength = 50;
-        breakLength = 15;
-      } else {
-        sessionLength = 90;
-        breakLength = 20;
-      }
+// ---- 6) Quick init check (for demo) ----
+window.checkFirestore = async function() {
+  try {
+    // very lightweight read: try to fetch 1 doc (if collection exists)
+    const snap = await db.collection("stressScores").limit(1).get();
+    console.log("Firestore reachable. stressScores docs:", snap.size);
+    return { ok: true, size: snap.size };
+  } catch (e) {
+    console.error("Firestore reachability check failed:", e);
+    return { ok: false, error: e };
+  }
+};
 
-      let totalMinutes = hours * 60;
-      let currentTime = 0;
-
-      while (currentTime < totalMinutes) {
-        if (currentTime + sessionLength <= totalMinutes) {
-          blocks.push({ type: 'Study', duration: sessionLength + ' minutes' });
-          currentTime += sessionLength;
-
-          if (currentTime + breakLength <= totalMinutes) {
-            blocks.push({ type: 'Break', duration: breakLength + ' minutes' });
-            currentTime += breakLength;
-          }
-        } else {
-          let remaining = totalMinutes - currentTime;
-          blocks.push({ type: 'Study', duration: remaining + ' minutes' });
-          currentTime = totalMinutes;
-        }
-      }
-      return blocks;
-    }
-
-    document.getElementById('genBtn').addEventListener('click', () => {
-      const s = Number(document.getElementById('stressIn').value);
-      const h = Number(document.getElementById('hoursIn').value);
-
-      if (isNaN(s) || s < 0 || s > 100) {
-        alert('Please enter a valid stress score between 0 and 100.');
-        return;
-      }
-      if (isNaN(h) || h < 0 || h > 24) {
-        alert('Please enter hours between 0 and 24.');
-        return;
-      }
-
-      const blocks = generateSchedule(s, h);
-
-      let output = '';
-      blocks.forEach((block, index) => {
-        output += ${index + 1}. ${block.type}: ${block.duration}\n;
-      });
-
-      document.getElementById('scheduleOut').innerText =
-        output || 'No schedule generated. Please check your inputs.';
-
-      const studyData = {
-        time: new Date().toLocaleString(),
-        stressScore: s,
-        hoursAvailable: h,
-        plan: output
-      };
-      localStorage.setItem("studentverse_scheduler", JSON.stringify(studyData));
-
-      if (window.saveStudyPlan) {
-        window.saveStudyPlan(studyData);
-      }
-    });
-  </script>
-</body>
-</html>
+// End of firebase-init.js
